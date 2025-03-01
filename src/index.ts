@@ -1,16 +1,16 @@
+import cookieParser from "cookie-parser";
 import express, { CookieOptions } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import userRoute from "./routes/userRoute.js";
 import passport from "passport";
 import "./strategies/local-strategy.js";
-import authRouter from "./routes/authRoute.js";
 import session from "express-session";
 import MySQLStore from "express-mysql-session";
 import pool from "./database/database.js";
 import eventRoute from "./routes/eventRoute.js";
 import userEventsRoute from "./routes/userEventsRoute.js";
-import cookieParser from "cookie-parser";
+import authRouter from "./routes/authRoute.js";
 
 const app = express();
 
@@ -22,7 +22,7 @@ const Mysqlstore = new Store({ clearExpired: true }, pool);
 const cookieSettings: CookieOptions =
     process.env.NODE_ENV === "production"
         ? {
-              sameSite: "none", //as the server doesn't have the same domain as the client
+              sameSite: "strict", //as the server doesn't have the same domain as the client
               secure: true,
               maxAge: 3600000 * 24, //one day
               httpOnly: true,
