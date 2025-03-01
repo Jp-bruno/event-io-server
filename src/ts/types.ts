@@ -1,0 +1,13 @@
+export interface TUser extends Express.User {
+    name: string;
+    email: string;
+    id: string;
+}
+
+export type UserType = {
+    id: number;
+    user_name: string;
+    user_email: string;
+    user_image: string;
+    user_password: string;
+}
