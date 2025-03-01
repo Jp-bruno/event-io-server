@@ -1,4 +1,4 @@
-import express from "express";
+import express, { CookieOptions } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import userRoute from "./routes/userRoute.js";
@@ -16,7 +16,22 @@ const app = express();
 const Store = MySQLStore(session);
 
 /* @ts-ignore */
-const Mysqlstore = new Store({}, pool);
+const Mysqlstore = new Store({ clearExpired: true }, pool);
+
+const cookieSettings: CookieOptions =
+    process.env.NODE_ENV === "production"
+        ? {
+              sameSite: "none", //as the server doesn't have the same domain as the client
+              secure: true,
+              maxAge: 3600000 * 24, //one day
+              httpOnly: true,
+          }
+        : {
+              sameSite: "strict",
+              secure: false,
+              maxAge: 3600000 * 24,
+              httpOnly: true,
+          };
 
 app.use(
     session({
@@ -24,12 +39,7 @@ app.use(
         saveUninitialized: false,
         resave: true,
         name: "c.id",
-        cookie: {
-            maxAge: 3600000 * 24, //one day
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "none" //as the server doesn't have the same domain as the client
-        },
+        cookie: cookieSettings,
         store: Mysqlstore,
     })
 );
