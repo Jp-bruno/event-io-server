@@ -32,7 +32,9 @@ app.use(
     })
 );
 
-app.use(cors({ origin: "http://localhost:3001", credentials: true }));
+console.log(process.env.NODE_ENV)
+
+app.use(cors({ origin: process.env.NODE_ENV === "development" ? process.env.DEV_ORIGIN : process.env.PROD_ORIGIN, credentials: true }));
 app.use(helmet());
 app.use(express.json());
 
