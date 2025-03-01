@@ -10,6 +10,7 @@ import MySQLStore from "express-mysql-session";
 import pool from "./database/database.js";
 import eventRoute from "./routes/eventRoute.js";
 import userEventsRoute from "./routes/userEventsRoute.js";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
@@ -33,6 +34,11 @@ const cookieSettings: CookieOptions =
               httpOnly: true,
           };
 
+app.use(cookieParser());
+app.use(cors({ origin: process.env.NODE_ENV === "development" ? process.env.DEV_ORIGIN : process.env.PROD_ORIGIN, credentials: true }));
+app.use(express.json());
+app.use(helmet());
+
 app.use(
     session({
         secret: process.env.COOKIE_SECRET as string,
@@ -47,10 +53,6 @@ app.use(
 console.log({ cookieSettings });
 console.log(process.env.NODE_ENV);
 console.log(process.env.PROD_ORIGIN);
-
-app.use(cors({ origin: process.env.NODE_ENV === "development" ? process.env.DEV_ORIGIN : process.env.PROD_ORIGIN, credentials: true }));
-app.use(helmet());
-app.use(express.json());
 
 app.use(passport.session());
 app.use(passport.initialize());
