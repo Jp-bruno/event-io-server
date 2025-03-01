@@ -21,10 +21,11 @@ const Mysqlstore = new Store({ clearExpired: true }, pool);
 const cookieSettings: CookieOptions =
     process.env.NODE_ENV === "production"
         ? {
-              sameSite: "lax", //as the server doesn't have the same domain as the client
+              sameSite: "none", //as the server doesn't have the same domain as the client
               secure: true,
               maxAge: 3600000 * 24, //one day
               httpOnly: true,
+              domain: process.env.PROD_ORIGIN
           }
         : {
               sameSite: "strict",
@@ -44,6 +45,7 @@ app.use(
     })
 );
 
+console.log({cookieSettings})
 console.log(process.env.NODE_ENV);
 console.log(process.env.PROD_ORIGIN);
 
