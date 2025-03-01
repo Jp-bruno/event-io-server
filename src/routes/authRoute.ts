@@ -26,7 +26,7 @@ authRouter.post("/", (req, res, next) => {
 authRouter.post("/logout", (req, res, next) => {
     req.logOut((err) => {
         if (err) {
-            console.log({ errReqLogou: err });
+            console.log({ errReqLogout: err });
         }
 
         req.session.destroy((err) => {
