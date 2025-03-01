@@ -23,7 +23,6 @@ const cookieSettings: CookieOptions =
     process.env.NODE_ENV === "production"
         ? {
               sameSite: "strict", //as the server doesn't have the same domain as the client
-              secure: true,
               maxAge: 3600000 * 24, //one day
               httpOnly: true,
           }
