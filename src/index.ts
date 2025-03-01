@@ -25,14 +25,17 @@ app.use(
         resave: true,
         name: "c.id",
         cookie: {
-            maxAge: 3600000 * 24, //um dia
+            maxAge: 3600000 * 24, //one day
             httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "none" //as the server doesn't have the same domain as the client
         },
         store: Mysqlstore,
     })
 );
 
-console.log(process.env.NODE_ENV)
+console.log(process.env.NODE_ENV);
+console.log(process.env.PROD_ORIGIN);
 
 app.use(cors({ origin: process.env.NODE_ENV === "development" ? process.env.DEV_ORIGIN : process.env.PROD_ORIGIN, credentials: true }));
 app.use(helmet());
