@@ -25,7 +25,7 @@ const cookieSettings: CookieOptions =
               secure: true,
               maxAge: 3600000 * 24, //one day
               httpOnly: true,
-              domain: process.env.PROD_ORIGIN
+              domain: process.env.PROD_ORIGIN,
           }
         : {
               sameSite: "strict",
@@ -45,7 +45,7 @@ app.use(
     })
 );
 
-console.log({cookieSettings})
+console.log({ cookieSettings });
 console.log(process.env.NODE_ENV);
 console.log(process.env.PROD_ORIGIN);
 
@@ -61,6 +61,6 @@ app.use("/auth", authRouter);
 app.use("/event", eventRoute);
 app.use("/user_events", userEventsRoute);
 
-app.listen(4000, () => {
+app.listen(process.env.PORT, () => {
     console.log(`Server running on port ${process.env.PORT}`);
 });
