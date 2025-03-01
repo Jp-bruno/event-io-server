@@ -25,7 +25,6 @@ const cookieSettings: CookieOptions =
               secure: false,
               maxAge: 3600000 * 24, //one day
               httpOnly: true,
-              domain: process.env.PROD_ORIGIN,
           }
         : {
               sameSite: "strict",
