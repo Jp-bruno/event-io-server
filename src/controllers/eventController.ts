@@ -167,31 +167,33 @@ const eventController = {
 
             const { limit, page, query } = querySchema.parse(req.query);
 
+            // TODO - APPLY PAGINATION
+
             const params = [];
 
             let queryString = `
-            SELECT 
-            id, 
-            event_title AS title, 
-            event_thumbnail AS thumbnail, 
-            event_banner AS banner, 
-            event_host_id AS host_id, 
-            event_description AS description, 
-            event_resume AS resume, 
-            event_slug AS slug, 
-            event_location AS location, 
-            event_date AS date 
-            FROM events 
+                SELECT 
+                    id, 
+                    event_title AS title, 
+                    event_thumbnail AS thumbnail, 
+                    event_banner AS banner, 
+                    event_host_id AS host_id, 
+                    event_description AS description, 
+                    event_resume AS resume, 
+                    event_slug AS slug, 
+                    event_location AS location, 
+                    event_date AS date 
+                FROM events 
             `;
-
-            if (limit) {
-                queryString += "LIMIT ?";
-                params.push(limit);
-            }
 
             if (query) {
                 queryString += `WHERE event_title LIKE ?`;
                 params.push(`%${query}%`);
+            }
+
+            if (limit) {
+                queryString += "LIMIT ?";
+                params.push(limit);
             }
 
             const [rows] = await pool.query(queryString, params);
