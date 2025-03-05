@@ -7,6 +7,5 @@ userRoute.post("/", (req, res) => userController.createUser(req, res));
 userRoute.get("/", (req, res) => userController.getUser(req, res));
 userRoute.put("/", (req, res) => userController.updateUser(req, res));
 userRoute.delete("/:id", (req, res) => userController.deleteUser(req, res));
-userRoute.get("/pw", (req, res) => userController.pw(req, res))
 
 export default userRoute;

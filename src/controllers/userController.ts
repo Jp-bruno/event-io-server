@@ -102,25 +102,6 @@ const userController = {
             res.status(500).json({ message: e.message });
         }
     },
-    pw: async (req, res) => {
-        try {
-            console.log("hi")
-            const [rows] = await pool.query("SELECT user_password, id FROM users");
-
-            rows.forEach(async (user) => {
-                const salt = await bcrypt.genSalt(10);
-                const hash = await bcrypt.hash("hashedpassword" + user.id, salt);
-
-                console.log(hash);
-
-                await pool.query("UPDATE users SET user_password = ? WHERE id = ?", [hash, user.id]);
-            });
-            res.status(200);
-        } catch (e) {
-            console.log(e);
-            res.status(500).json({ message: e.message });
-        }
-    },
 };
 
 export default userController;
