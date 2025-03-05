@@ -13,7 +13,7 @@ const userEventsContoller = {
 
             const { userId, eventId } = bodySchema.parse(req.body);
 
-            await pool.query(`INSERT INTO user_events (user_id, event_id, role) VALUES(? , ?)`, [userId, eventId, "participant"]);
+            await pool.query(`INSERT INTO user_events (user_id, event_id, user_role) VALUES(?, ?, ?)`, [userId, eventId, "participant"]);
 
             res.status(201).end();
         } catch (e: any) {
