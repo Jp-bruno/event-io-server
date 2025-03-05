@@ -20,7 +20,7 @@ CREATE TABLE events (
     event_slug VARCHAR(100),
     event_location VARCHAR(100),
     event_date DATE,
-    FOREIGN KEY (event_host_id) REFERENCES users(id)
+    FOREIGN KEY (event_host_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE user_events (
