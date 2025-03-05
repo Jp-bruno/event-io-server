@@ -57,6 +57,8 @@ const userController = {
 
             const parsedBody = bodySchema.parse(req.body);
 
+            console.log({ parsedBody });
+
             if (parsedBody.image) {
                 await pool.query(`UPDATE users SET user_image = ? WHERE id = ?`, [parsedBody.image, (req.user as TUser).id]);
 
@@ -74,6 +76,11 @@ const userController = {
             res.status(200).end();
         } catch (e: any) {
             console.log(e);
+            if (e.code === "ER_DUP_ENTRY") {
+                console.log("hi")
+                res.status(409).json({ message: "Email is already taken. Please try another one." });
+                return
+            }
             res.status(500).json({ message: e.message });
         }
     },
