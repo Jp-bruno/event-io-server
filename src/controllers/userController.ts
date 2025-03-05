@@ -112,10 +112,10 @@ const userController = {
                 req.session.destroy(async (err) => {
                     if (err) {
                         console.log({ errSessionDestroy: err });
-            }
+                    }
 
-            await pool.query(`DELETE FROM users WHERE id = ?`, [parsedParams]);
-
+                    await pool.query(`DELETE FROM users WHERE id = ?`, [parsedParams]);
+                    
                     res.clearCookie("c.id")
                     res.status(204).json({message: "User deleted"})
                 });

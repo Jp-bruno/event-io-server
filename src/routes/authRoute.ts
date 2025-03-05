@@ -24,6 +24,8 @@ authRouter.post("/", (req, res, next) => {
     }) as passport.AuthenticateCallback)(req, res, next);
 });
 authRouter.post("/logout", (req, res, next) => {
+    req.sessionStore.destroy(req.session.id);
+
     req.logOut((err) => {
         if (err) {
             console.log({ errReqLogout: err });
@@ -34,6 +36,7 @@ authRouter.post("/logout", (req, res, next) => {
                 console.log({ errSessionDestroy: err });
                 return res.status(500).json({ message: "Logout failed" });
             }
+            res.clearCookie("c.id");
             res.json({ message: "Logout successful" });
         });
     });
