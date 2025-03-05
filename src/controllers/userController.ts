@@ -21,16 +21,19 @@ const userController = {
 
             const hash = await bcrypt.hash(parsedBody.password, salt);
 
-            await pool.query(`INSERT INTO users (user_name, user_email, user_image, user_password) VALUES (?, ?, ?, ?)`, [
+            const [result] = await pool.query(`INSERT INTO users (user_name, user_email, user_password) VALUES (?, ?, ?)`, [
                 parsedBody.name,
                 parsedBody.email,
-                parsedBody.image ?? null,
                 hash,
             ]);
 
-            res.status(200).json({ user: { name: parsedBody.name, email: parsedBody.email, image: parsedBody.image } });
+            res.status(201).json({ user: { name: parsedBody.name, email: parsedBody.email, id: (result as ResultSetHeader).insertId } });
         } catch (e: any) {
             console.log(e);
+            if (e.code === "ER_DUP_ENTRY") {
+                res.status(409).json({ message: "Email already in use." });
+                return;
+            }
             res.status(500).json({ message: e.message });
         }
     },
