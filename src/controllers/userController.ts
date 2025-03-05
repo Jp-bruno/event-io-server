@@ -11,7 +11,6 @@ const userController = {
             const bodySchema = z.object({
                 name: z.string().max(100).nonempty().trim(),
                 email: z.string().email().nonempty().trim(),
-                image: z.string().url().optional(),
                 password: z.string().min(8).max(50),
             });
 
@@ -39,7 +38,7 @@ const userController = {
     },
     getUser: async (req: Request, res: Response) => {
         try {
-            const [rows] = await pool.query(`SELECT user_name as name, user_email as email, user_image as image FROM users WHERE id = ?`, [
+            const [rows] = await pool.query(`SELECT id, user_name as name, user_email as email, user_image as image FROM users WHERE id = ?`, [
                 //@ts-ignore
                 req.user.id,
             ]);
