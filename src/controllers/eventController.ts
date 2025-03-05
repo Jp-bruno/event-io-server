@@ -106,6 +106,34 @@ const eventController = {
 
             const slug = paramsSchema.parse(req.params.slug);
 
+            if (req.user) {
+                const [rows] = await pool.query(
+                    `SELECT 
+                            id, 
+                            event_title AS title, 
+                            event_thumbnail AS thumbnail, 
+                            event_banner AS banner, 
+                            event_host_id AS host_id, 
+                            event_description AS description, 
+                            event_resume AS resume, 
+                            event_slug AS slug, 
+                            event_location AS location, 
+                            event_date AS date,
+                            CASE
+                                WHEN user_events.user_id IS NOT NULL THEN TRUE
+                                ELSE FALSE
+                            END AS is_enrolled
+                        FROM events
+                        LEFT JOIN user_events
+                            ON events.id = user_events.event_id AND user_events.user_id = ?
+                        WHERE event_slug = ?`,
+                    [(req.user as TUser).id, slug]
+                );
+
+                res.status(200).json(rows[0 as keyof QueryResult]);
+                return;
+            }
+
             const [rows] = await pool.query(
                 `SELECT 
                         id, 
@@ -117,8 +145,8 @@ const eventController = {
                         event_resume AS resume, 
                         event_slug AS slug, 
                         event_location AS location, 
-                        event_date AS date 
-                    FROM events 
+                        event_date AS date
+                    FROM events
                     WHERE event_slug = ?`,
                 [slug]
             );
