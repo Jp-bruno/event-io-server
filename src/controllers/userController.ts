@@ -36,13 +36,13 @@ const userController = {
     },
     getUser: async (req: Request, res: Response) => {
         try {
-            const paramsSchema = z.coerce.number().min(1);
+            console.log(req.user)
+            const [rows] = await pool.query(`SELECT user_name as name, user_email as email, user_image as image FROM users WHERE id = ?`, [
+                //@ts-ignore
+                req.user.id,
+            ]);
 
-            const parsedParams = paramsSchema.parse(req.params.id);
-
-            const [rows] = await pool.query(`SELECT user_name, user_email FROM users WHERE id = ?`, [parsedParams]);
-
-            res.status(200).json({ user: rows[0 as keyof QueryResult] });
+            res.status(200).json(rows[0 as keyof QueryResult]);
         } catch (e: any) {
             console.log(e);
             res.status(500).json({ message: e.message });
@@ -59,12 +59,7 @@ const userController = {
             const parsedBody = bodySchema.parse(req.body);
 
             if (parsedBody.image) {
-                await pool.query(`UPDATE users SET user_name = ?, user_email = ?, user_image = ? WHERE id = ?`, [
-                    parsedBody.name,
-                    parsedBody.email,
-                    parsedBody.image,
-                    (req.user as TUser).id,
-                ]);
+                await pool.query(`UPDATE users SET user_image = ? WHERE id = ?`, [parsedBody.image, (req.user as TUser).id]);
 
                 res.status(200).end();
 
@@ -100,7 +95,7 @@ const userController = {
                 return;
             }
 
-            await pool.query(`DELETE FROM users WHERE id = ?`, [parsedParams])
+            await pool.query(`DELETE FROM users WHERE id = ?`, [parsedParams]);
 
             res.status(204).end();
         } catch (e: any) {
