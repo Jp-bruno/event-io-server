@@ -20,7 +20,7 @@ const userEventsContoller = {
             res.status(500).json({ message: e.message });
         }
     },
-    cancelEnrollment: async (req: Request, res: Response) => {
+    unenrollUser: async (req: Request, res: Response) => {
         try {
             const paramsSchema = z.object({
                 userId: z.coerce.number().min(1),

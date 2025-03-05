@@ -1,3 +1,5 @@
+import session from "express-session";
+
 export interface TUser extends Express.User {
     name: string;
     email: string;
@@ -10,4 +12,6 @@ export type UserType = {
     user_email: string;
     user_image: string;
     user_password: string;
-}
+};
+
+

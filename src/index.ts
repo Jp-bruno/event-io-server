@@ -22,13 +22,12 @@ const Mysqlstore = new Store({ clearExpired: true }, pool);
 const cookieSettings: CookieOptions =
     process.env.NODE_ENV === "production"
         ? {
-              sameSite: "strict", //as the server doesn't have the same domain as the client
+              sameSite: "strict",
               maxAge: 3600000 * 24, //one day
               httpOnly: true,
           }
         : {
               sameSite: "strict",
-              secure: false,
               maxAge: 3600000 * 24,
               httpOnly: true,
           };
@@ -48,10 +47,6 @@ app.use(
         store: Mysqlstore,
     })
 );
-
-console.log({ cookieSettings });
-console.log(process.env.NODE_ENV);
-console.log(process.env.PROD_ORIGIN);
 
 app.use(passport.session());
 app.use(passport.initialize());
