@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import pool from "../database/database.js";
 import bcrypt from "bcrypt";
-import { QueryResult } from "mysql2";
+import { QueryResult, ResultSetHeader } from "mysql2";
 import { TUser, UserType } from "../ts/types.js";
 
 const userController = {
@@ -79,9 +79,8 @@ const userController = {
         } catch (e: any) {
             console.log(e);
             if (e.code === "ER_DUP_ENTRY") {
-                console.log("hi")
                 res.status(409).json({ message: "Email is already taken. Please try another one." });
-                return
+                return;
             }
             res.status(500).json({ message: e.message });
         }
@@ -103,9 +102,24 @@ const userController = {
                 return;
             }
 
+            req.sessionStore.destroy(req.session.id);
+
+            req.logOut((err) => {
+                if (err) {
+                    console.log({ errReqLogout: err });
+                }
+
+                req.session.destroy(async (err) => {
+                    if (err) {
+                        console.log({ errSessionDestroy: err });
+            }
+
             await pool.query(`DELETE FROM users WHERE id = ?`, [parsedParams]);
 
-            res.status(204).end();
+                    res.clearCookie("c.id")
+                    res.status(204).json({message: "User deleted"})
+                });
+            });
         } catch (e: any) {
             console.log(e);
             res.status(500).json({ message: e.message });
