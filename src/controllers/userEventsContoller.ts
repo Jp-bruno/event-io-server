@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import pool from "../database/database.js";
+import { TUser } from "../ts/types.js";
 
 const userEventsContoller = {
     enrollUser: async (req: Request, res: Response) => {
@@ -32,6 +33,59 @@ const userEventsContoller = {
             await pool.query(`DELETE FROM user_events WHERE user_id = ? AND event_id = ? `, [userId, eventId]);
 
             res.status(204).end();
+        } catch (e: any) {
+            console.log(e);
+            res.status(500).json({ message: e.message });
+        }
+    },
+    getUserEvents: async (req: Request, res: Response) => {
+        try {
+            const querySchema = z.object({
+                limit: z.coerce.number().optional(),
+                page: z.coerce.number().optional(),
+                query: z.string().optional(),
+            });
+
+            const { limit, page, query } = querySchema.parse(req.query);
+
+            // TODO - APPLY PAGINATION
+
+            const params: (string | number)[] = [(req.user as TUser).id];
+
+            let queryString = `
+                SELECT 
+                    events.id, 
+                    event_title AS title, 
+                    event_thumbnail AS thumbnail, 
+                    event_banner AS banner, 
+                    event_host_id AS host_id, 
+                    event_description AS description, 
+                    event_resume AS resume, 
+                    event_slug AS slug, 
+                    event_location AS location, 
+                    event_date AS date,
+                    user_events.user_role as role
+                FROM events 
+                JOIN user_events 
+                ON user_events.event_id = events.id 
+                WHERE user_events.user_id = ?
+            `;
+
+            if (query) {
+                queryString += `AND event_title LIKE ?`;
+                params.push(`%${query}%`);
+            }
+
+            if (limit) {
+                queryString += "LIMIT ?";
+                params.push(limit);
+            }
+
+            const [rows] = await pool.query(queryString, params);
+
+            res.status(200).json(rows);
+
+            return;
         } catch (e: any) {
             console.log(e);
             res.status(500).json({ message: e.message });
