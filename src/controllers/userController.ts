@@ -36,7 +36,6 @@ const userController = {
     },
     getUser: async (req: Request, res: Response) => {
         try {
-            console.log(req.user)
             const [rows] = await pool.query(`SELECT user_name as name, user_email as email, user_image as image FROM users WHERE id = ?`, [
                 //@ts-ignore
                 req.user.id,
@@ -99,6 +98,25 @@ const userController = {
 
             res.status(204).end();
         } catch (e: any) {
+            console.log(e);
+            res.status(500).json({ message: e.message });
+        }
+    },
+    pw: async (req, res) => {
+        try {
+            console.log("hi")
+            const [rows] = await pool.query("SELECT user_password, id FROM users");
+
+            rows.forEach(async (user) => {
+                const salt = await bcrypt.genSalt(10);
+                const hash = await bcrypt.hash("hashedpassword" + user.id, salt);
+
+                console.log(hash);
+
+                await pool.query("UPDATE users SET user_password = ? WHERE id = ?", [hash, user.id]);
+            });
+            res.status(200);
+        } catch (e) {
             console.log(e);
             res.status(500).json({ message: e.message });
         }
