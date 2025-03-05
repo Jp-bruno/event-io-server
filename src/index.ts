@@ -11,7 +11,6 @@ import pool from "./database/database.js";
 import eventRoute from "./routes/eventRoute.js";
 import userEventsRoute from "./routes/userEventsRoute.js";
 import authRouter from "./routes/authRoute.js";
-import bcrypt from "bcrypt";
 
 const app = express();
 
@@ -48,20 +47,6 @@ app.use(
         store: Mysqlstore,
     })
 );
-
-app.get("/", async (req, res) => {
-    const [rows] = await pool.query("SELECT user_password, id FROM users");
-
-    rows.forEach(async (user) => {
-        const salt = await bcrypt.genSalt(10);
-        const hash = await bcrypt.hash(user.user_password, salt);
-
-        await pool.query("UPDATE users SET user_password = ? WHERE id = ?", [hash, user.id]);
-    });
-});
-
-console.log({ cookieSettings });
-console.log(process.env.NODE_ENV);
 
 app.use(passport.session());
 app.use(passport.initialize());
