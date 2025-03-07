@@ -4,6 +4,9 @@ import pool from "../database/database.js";
 import bcrypt from "bcrypt";
 import { QueryResult, ResultSetHeader } from "mysql2";
 import { TUser, UserType } from "../ts/types.js";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { r2 } from "../lib/r2.js";
 
 const userController = {
     createUser: async (req: Request, res: Response) => {
@@ -54,7 +57,12 @@ const userController = {
             const bodySchema = z.object({
                 name: z.string().nonempty().max(100).trim(),
                 email: z.string().nonempty().max(100).trim().email(),
-                image: z.string().max(255).trim().url().optional(),
+                image: z
+                    .object({
+                        name: z.string().max(255).trim(),
+                        mimetype: z.string().max(20).trim(),
+                    })
+                    .optional(),
             });
 
             const parsedBody = bodySchema.parse(req.body);
@@ -62,9 +70,19 @@ const userController = {
             console.log({ parsedBody });
 
             if (parsedBody.image) {
-                await pool.query(`UPDATE users SET user_image = ? WHERE id = ?`, [parsedBody.image, (req.user as TUser).id]);
+                const signedUrl = await getSignedUrl(
+                    r2,
+                    new PutObjectCommand({
+                        Bucket: process.env.R2_BUCKET_NAME,
+                        Key: parsedBody.image.name,
+                        ContentType: parsedBody.image.mimetype,
+                    }),
+                    { expiresIn: 20 }
+                );
+                
+                await pool.query(`UPDATE users SET user_image = ? WHERE id = ?`, [`${process.env.R2_PUBLIC_ENDPOINT}/${parsedBody.image.name}`, (req.user as TUser).id]);
 
-                res.status(200).end();
+                res.status(201).json({ signedUrl });
 
                 return;
             }
@@ -115,9 +133,9 @@ const userController = {
                     }
 
                     await pool.query(`DELETE FROM users WHERE id = ?`, [parsedParams]);
-                    
-                    res.clearCookie("c.id")
-                    res.status(204).json({message: "User deleted"})
+
+                    res.clearCookie("c.id");
+                    res.status(204).json({ message: "User deleted" });
                 });
             });
         } catch (e: any) {

@@ -3,7 +3,7 @@ import session from "express-session";
 export interface TUser extends Express.User {
     name: string;
     email: string;
-    id: string;
+    id: number;
 }
 
 export type UserType = {

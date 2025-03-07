@@ -1,16 +1,30 @@
 import { query, Request, Response } from "express";
 import { z } from "zod";
 import pool from "../database/database.js";
-import { TUser } from "../ts/types.js";
+import { TUser, UserType } from "../ts/types.js";
 import { QueryResult, ResultSetHeader } from "mysql2";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { r2 } from "../lib/r2.js";
+import slug from "slug";
 
 const eventController = {
     createEvent: async (req: Request, res: Response) => {
         try {
             const bodySchema = z.object({
                 title: z.string().nonempty().max(100).trim(),
-                thumbnail: z.string().url().optional(),
-                banner: z.string().url().optional(),
+                thumbnail: z
+                    .object({
+                        name: z.string().max(255).trim(),
+                        mimetype: z.string().max(20).trim(),
+                    })
+                    .optional(),
+                banner: z
+                    .object({
+                        name: z.string().max(255).trim(),
+                        mimetype: z.string().max(20).trim(),
+                    })
+                    .optional(),
                 description: z.string().max(1000).optional(),
                 resume: z.string().max(100).optional(),
                 location: z.string().max(500).optional(),
@@ -19,18 +33,43 @@ const eventController = {
 
             const { title, thumbnail, banner, description, resume, location, date } = bodySchema.parse(req.body);
 
+            let thumbnailSignedUrl = thumbnail
+                ? await getSignedUrl(
+                      r2,
+                      new PutObjectCommand({
+                          Bucket: process.env.R2_BUCKET_NAME,
+                          Key: thumbnail.name,
+                          ContentType: thumbnail.mimetype,
+                      }),
+                      { expiresIn: 30 }
+                  )
+                : null;
+
+            let bannerSignedUrl = banner
+                ? await getSignedUrl(
+                      r2,
+                      new PutObjectCommand({
+                          Bucket: process.env.R2_BUCKET_NAME,
+                          Key: banner.name,
+                          ContentType: banner.mimetype,
+                      }),
+                      { expiresIn: 30 }
+                  )
+                : null;
+
             const [result] = await pool.query(
-                `INSERT INTO events (event_title, event_thumbnail, event_banner, event_host_id, event_description, event_resume, event_location, event_date) 
-                VALUES (?, ?, ?, ?, ?, ?, ?);`,
+                `INSERT INTO events (event_title, event_thumbnail, event_banner, event_host_id, event_description, event_resume, event_location, event_date, event_slug)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
                 [
                     title,
-                    thumbnail ?? null,
-                    banner ?? null,
+                    thumbnail ? `${process.env.R2_PUBLIC_ENDPOINT}/${thumbnail.name}` : null,
+                    banner ? `${process.env.R2_PUBLIC_ENDPOINT}/${banner.name}` : null,
                     (req.user as TUser).id,
                     description ?? null,
                     resume ?? null,
                     location ?? null,
-                    date ?? null,
+                    date ? date : null,
+                    slug(title, "-"),
                 ]
             );
 
@@ -39,6 +78,21 @@ const eventController = {
                 VALUES (? , ? ,?);`,
                 [(req.user as TUser).id, (result as ResultSetHeader).insertId, "host"]
             );
+
+            if (bannerSignedUrl && thumbnailSignedUrl) {
+                res.status(201).json({ bannerSignedUrl, thumbnailSignedUrl });
+                return;
+            }
+
+            if (bannerSignedUrl) {
+                res.status(201).json({ bannerSignedUrl });
+                return;
+            }
+
+            if (thumbnailSignedUrl) {
+                res.status(201).json({ thumbnailSignedUrl });
+                return;
+            }
 
             res.status(201).end();
         } catch (e: any) {
@@ -91,6 +145,19 @@ const eventController = {
             const paramsSchema = z.coerce.number().min(1);
 
             const parsedParams = paramsSchema.parse(req.params.id);
+
+            const userFromSession = req.user as TUser;
+
+            console.log({userFromSession})
+
+            const [rows] = await pool.query(`SELECT user_name, user_email, id FROM users WHERE id = ?`, [userFromSession.id]);
+
+            const user: UserType = rows[0 as keyof QueryResult];
+
+            if (user.id !== userFromSession.id) {
+                res.status(403).end();
+                return;
+            }
 
             await pool.query(`DELETE FROM events WHERE id = ?`, [parsedParams]);
 
