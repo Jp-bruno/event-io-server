@@ -104,33 +104,57 @@ const eventController = {
         try {
             const bodySchema = z.object({
                 id: z.number().min(1),
-                title: z.string().nonempty().max(100).trim().optional(),
-                thumbnail: z.string().url().optional(),
-                banner: z.string().url().optional(),
-                description: z.string().max(1000).optional(),
-                resume: z.string().max(100).optional(),
-                location: z.string().max(500).optional(),
-                date: z.string().optional(),
+                title: z.string().nonempty().max(100).trim(),
+                thumbnail: z
+                    .object({
+                        name: z.string().max(255).trim(),
+                        mimetype: z.string().max(20).trim(),
+                    })
+                    .optional()
+                    .nullable(),
+                banner: z
+                    .object({
+                        name: z.string().max(255).trim(),
+                        mimetype: z.string().max(20).trim(),
+                    })
+                    .optional()
+                    .nullable(),
+                description: z.string().max(1000).optional().nullable(),
+                resume: z.string().max(100).optional().nullable(),
+                location: z.string().max(500).optional().nullable(),
+                date: z.string().optional().nullable(),
             });
 
             const parsedBody = bodySchema.parse(req.body);
 
             let queryString = `UPDATE events SET `;
 
+            type BodyType = z.infer<typeof bodySchema>;
+
             const entries = Object.entries(parsedBody);
 
-            const params: (number | string | boolean)[] = [];
+            const params: (number | string | boolean | null | { name: string; mimetype: string })[] = [];
+
+            //TODO: SEND THE IMAGE TO R2 AND RETRIEVE SIGNED URL
 
             entries.forEach((entry, index) => {
                 if (entry[0] === "id") {
                     return;
                 }
 
+                if (entry[0] === "thumbnail" || entry[0] === "banner") {
+                    queryString += `event_${entry[0]} = ?${index === entries.length - 1 ? " " : ", "}`;
+                    params.push(`${process.env.R2_PUBLIC_ENDPOINT}/${(entry[1] as { name: string; mimetype: string }).name}`);
+                    return
+                }
+
                 queryString += `event_${entry[0]} = ?${index === entries.length - 1 ? " " : ", "}`;
-                params.push(entry[1]);
+                params.push(entry[1] ? entry[1] : null);
             });
 
-            queryString += `WHERE id = ${entries[0][1]}`;
+            queryString += `WHERE id = ?`;
+
+            params.push(entries[0][1]);
 
             await pool.query(queryString, params);
 
@@ -148,7 +172,7 @@ const eventController = {
 
             const userFromSession = req.user as TUser;
 
-            console.log({userFromSession})
+            console.log({ userFromSession });
 
             const [rows] = await pool.query(`SELECT user_name, user_email, id FROM users WHERE id = ?`, [userFromSession.id]);
 
