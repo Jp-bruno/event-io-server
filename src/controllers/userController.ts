@@ -67,8 +67,6 @@ const userController = {
 
             const parsedBody = bodySchema.parse(req.body);
 
-            console.log({ parsedBody });
-
             if (parsedBody.image) {
                 const signedUrl = await getSignedUrl(
                     r2,
@@ -79,8 +77,11 @@ const userController = {
                     }),
                     { expiresIn: 20 }
                 );
-                
-                await pool.query(`UPDATE users SET user_image = ? WHERE id = ?`, [`${process.env.R2_PUBLIC_ENDPOINT}/${parsedBody.image.name}`, (req.user as TUser).id]);
+
+                await pool.query(`UPDATE users SET user_image = ? WHERE id = ?`, [
+                    `${process.env.R2_PUBLIC_ENDPOINT}/${parsedBody.image.name}`,
+                    (req.user as TUser).id,
+                ]);
 
                 res.status(201).json({ signedUrl });
 
@@ -93,7 +94,7 @@ const userController = {
                 (req.user as TUser).id,
             ]);
 
-            res.status(200).end();
+            res.status(200).json({ name: parsedBody.name, email: parsedBody.email, id: (req.user as TUser).id });
         } catch (e: any) {
             console.log(e);
             if (e.code === "ER_DUP_ENTRY") {
