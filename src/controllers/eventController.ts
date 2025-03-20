@@ -304,11 +304,11 @@ const eventController = {
         try {
             const querySchema = z.object({
                 limit: z.coerce.number().optional(),
-                page: z.coerce.number().optional(),
+                offset: z.coerce.number().optional(),
                 query: z.string().optional(),
             });
 
-            const { limit, page, query } = querySchema.parse(req.query);
+            const { limit, offset, query } = querySchema.parse(req.query);
 
             // TODO - APPLY PAGINATION
 
@@ -335,8 +335,13 @@ const eventController = {
             }
 
             if (limit) {
-                queryString += "LIMIT ?";
+                queryString += "LIMIT ? ";
                 params.push(limit);
+            }
+
+            if (offset) {
+                queryString += "OFFSET ?";
+                params.push(offset)
             }
 
             const [rows] = await pool.query(queryString, params);
