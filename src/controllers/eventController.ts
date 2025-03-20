@@ -33,12 +33,14 @@ const eventController = {
 
             const { title, thumbnail, banner, description, resume, location, date } = bodySchema.parse(req.body);
 
+            const fileNameTimeStamp = Date.now();
+
             let thumbnailSignedUrl = thumbnail
                 ? await getSignedUrl(
                       r2,
                       new PutObjectCommand({
                           Bucket: process.env.R2_BUCKET_NAME,
-                          Key: thumbnail.name,
+                          Key: `${thumbnail.name}_${(req.user as TUser).id}_${fileNameTimeStamp}}`,
                           ContentType: thumbnail.mimetype,
                       }),
                       { expiresIn: 30 }
@@ -50,7 +52,7 @@ const eventController = {
                       r2,
                       new PutObjectCommand({
                           Bucket: process.env.R2_BUCKET_NAME,
-                          Key: banner.name,
+                          Key: `${banner.name}_${(req.user as TUser).id}_${fileNameTimeStamp}}`,
                           ContentType: banner.mimetype,
                       }),
                       { expiresIn: 30 }
@@ -129,13 +131,15 @@ const eventController = {
 
             let queryString = `UPDATE events SET `;
 
-            type BodyType = z.infer<typeof bodySchema>;
-
             const entries = Object.entries(parsedBody);
 
             const params: (number | string | boolean | null | { name: string; mimetype: string })[] = [];
 
             //TODO: SEND THE IMAGE TO R2 AND RETRIEVE SIGNED URL
+
+            const fileNameTimeStamp = Date.now();
+
+            let newSlug = slug(parsedBody.title, "-");
 
             entries.forEach((entry, index) => {
                 if (entry[0] === "id") {
@@ -144,8 +148,17 @@ const eventController = {
 
                 if (entry[0] === "thumbnail" || entry[0] === "banner") {
                     queryString += `event_${entry[0]} = ?${index === entries.length - 1 ? " " : ", "}`;
-                    params.push(`${process.env.R2_PUBLIC_ENDPOINT}/${(entry[1] as { name: string; mimetype: string }).name}`);
-                    return
+                    params.push(
+                        `${process.env.R2_PUBLIC_ENDPOINT}/${(entry[1] as { name: string; mimetype: string }).name}_${
+                            (req.user as TUser).id
+                        }_${fileNameTimeStamp}`
+                    );
+                    return;
+                }
+
+                if (entry[0] === "title") {
+                    queryString += `event_slug = ?, `;
+                    params.push(newSlug);
                 }
 
                 queryString += `event_${entry[0]} = ?${index === entries.length - 1 ? " " : ", "}`;
@@ -158,7 +171,46 @@ const eventController = {
 
             await pool.query(queryString, params);
 
-            res.status(200).end();
+            let thumbnailSignedUrl = parsedBody.thumbnail
+                ? await getSignedUrl(
+                      r2,
+                      new PutObjectCommand({
+                          Bucket: process.env.R2_BUCKET_NAME,
+                          Key: `${parsedBody.thumbnail.name}_${(req.user as TUser).id}_${fileNameTimeStamp}`,
+                          ContentType: parsedBody.thumbnail.mimetype,
+                      }),
+                      { expiresIn: 30 }
+                  )
+                : null;
+
+            let bannerSignedUrl = parsedBody.banner
+                ? await getSignedUrl(
+                      r2,
+                      new PutObjectCommand({
+                          Bucket: process.env.R2_BUCKET_NAME,
+                          Key: `${parsedBody.banner.name}_${(req.user as TUser).id}_${fileNameTimeStamp}`,
+                          ContentType: parsedBody.banner.mimetype,
+                      }),
+                      { expiresIn: 30 }
+                  )
+                : null;
+
+            if (bannerSignedUrl && thumbnailSignedUrl) {
+                res.status(200).json({ bannerSignedUrl, thumbnailSignedUrl, slug: newSlug });
+                return;
+            }
+
+            if (bannerSignedUrl) {
+                res.status(200).json({ bannerSignedUrl, slug: newSlug });
+                return;
+            }
+
+            if (thumbnailSignedUrl) {
+                res.status(200).json({ thumbnailSignedUrl, slug: newSlug });
+                return;
+            }
+
+            res.status(200).json({ slug: newSlug });
         } catch (e: any) {
             console.log(e);
             res.status(500).json({ message: e.message });
