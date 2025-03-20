@@ -48,8 +48,6 @@ const userEventsContoller = {
 
             const { limit, offset, query } = querySchema.parse(req.query);
 
-            // TODO - APPLY PAGINATION
-
             const params: (string | number)[] = [(req.user as TUser).id];
 
             let queryString = `

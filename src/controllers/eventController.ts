@@ -135,8 +135,6 @@ const eventController = {
 
             const params: (number | string | boolean | null | { name: string; mimetype: string })[] = [];
 
-            //TODO: SEND THE IMAGE TO R2 AND RETRIEVE SIGNED URL
-
             const fileNameTimeStamp = Date.now();
 
             let newSlug = slug(parsedBody.title, "-");
@@ -309,8 +307,6 @@ const eventController = {
             });
 
             const { limit, offset, query } = querySchema.parse(req.query);
-
-            // TODO - APPLY PAGINATION
 
             const params = [];
 
